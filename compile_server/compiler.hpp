@@ -1,12 +1,11 @@
 #pragma once
 
-
-#include "../commen/util.hpp"
-#include "../commen/log.hpp"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>   
-
+#include "../commen/util.hpp"
+#include "../commen/log.hpp"
+#include "../commen/err.hpp"
 
 /***************
  * 编译模块
@@ -20,18 +19,19 @@ namespace ns_compiler
 {
     using namespace ns_util;
     using namespace ns_log;
+    using namespace ns_err;
 
     class Compiler
     {
     public:
         // 编译文件
-        static bool Compile(const std::string &filename)
+        static com_t Compile(const std::string &filename)
         {
             pid_t pid = fork();
             if (pid < 0)
             {
                 LogMessage(Error, "编译创建子进程失败\n");
-                return false;
+                return CompileErrCode::FORK_FAILED;
             }
             else if (pid == 0)
             {
@@ -45,22 +45,22 @@ namespace ns_compiler
                 int err_fd = open(err_path.c_str(), O_CREAT | O_WRONLY, 0644);
                 if (src_fd < 0 || err_fd < 0)
                 {
-                    LogMessage(Warning, "open file failed, path: %s, %s, %s\n", src_path.c_str(), exe_path.c_str(), err_path.c_str());
-                    exit(1); // 文件打开出错
+                    LogMessage(Warning, "open file failed, path: %s, %s\n", src_path.c_str(), err_path.c_str());
+                    exit(CompileErrCode::OPEN_FILE_FAILED); // 文件打开出错
                 }
                 //替换程序
                 dup2(err_fd, 2);
                 execlp("g++", "g++", "-o", exe_path.c_str(), src_path.c_str(), "-std=c++11", nullptr);
                 LogMessage(Error, "excelp failed, path: %s\n", err_path.c_str());
-                exit(2);//替换出错
+                exit(CompileErrCode::EXCEL_FAILED);//替换出错
             }
             else
             {
                 // 父进程
                 int status = 0;
                 waitpid(pid, &status, 0);
-                LogMessage(Info, "编译完毕, pid: %d, status: %d\n", pid, status);
-                return true;
+                LogMessage(Info, "子进程编译服务结束, pid: %d, status: %d\n", pid, status);
+                return status;
             }
         }
     };
