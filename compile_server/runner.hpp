@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -41,6 +43,7 @@ namespace ns_runner
          ****************/
         static int Run(std::string filename, int cpu_limit, int mem_limit)
         {
+            sleep(5);
             std::string exe_path = PathUtil::ExeFile(filename);
             std::string stdin_path = PathUtil::StdinFile(filename);
             std::string stdout_path = PathUtil::StdoutFile(filename);
